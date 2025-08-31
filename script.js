@@ -52,7 +52,7 @@ const muscleGroups = {
 };
 
 // State
-let currentWeekWorkouts = [];
+let allWeekWorkouts = {};
 let weekHistory = [];
 let currentWeekOffset = 0;
 let currentTab = 'current';
@@ -100,20 +100,110 @@ function getWeekId(date) {
     return monday.toISOString().split('T')[0];
 }
 
-// Local Storage functions
+function getCurrentWeekWorkouts() {
+    const { monday } = getWeekDates(currentWeekOffset);
+    const weekId = getWeekId(monday);
+    return allWeekWorkouts[weekId] || [];
+}
+
+function setCurrentWeekWorkouts(workouts) {
+    const { monday } = getWeekDates(currentWeekOffset);
+    const weekId = getWeekId(monday);
+    allWeekWorkouts[weekId] = workouts;
+}
+
+function isCurrentWeek() {
+    return currentWeekOffset === 0;
+}
+
+function isEndOfWeek(date) {
+    return date.getDay() === 0;
+}
+
+// Función modificada: Ahora permite edición en semanas anteriores
+function canEditWeek() {
+    return true; // Ahora siempre se puede editar
+}
+
+// Función modificada: Solo auto-guarda semanas que ya terminaron (domingo pasó)
+function autoSaveWeekIfNeeded() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+    
+    Object.keys(allWeekWorkouts).forEach(weekId => {
+        const weekDate = new Date(weekId);
+        const weekSunday = new Date(weekDate);
+        weekSunday.setDate(weekDate.getDate() + 6);
+        weekSunday.setHours(23, 59, 59, 999); // End of Sunday
+        
+        // Si el domingo de esa semana ya pasó completamente
+        if (weekSunday < today) {
+            const existingInHistory = weekHistory.find(w => w.id === weekId);
+            if (!existingInHistory && allWeekWorkouts[weekId].length > 0) {
+                saveWeekToHistory(weekId);
+            } else if (existingInHistory) {
+                // Actualizar semana existente si hay cambios
+                updateWeekInHistory(weekId);
+            }
+        }
+    });
+}
+
+function saveWeekToHistory(weekId) {
+    const weekWorkouts = allWeekWorkouts[weekId];
+    if (!weekWorkouts || weekWorkouts.length === 0) return;
+    
+    const weekDate = new Date(weekId);
+    const sunday = new Date(weekDate);
+    sunday.setDate(weekDate.getDate() + 6);
+    
+    const weekData = {
+        id: weekId,
+        startDate: weekDate.toISOString(),
+        endDate: sunday.toISOString(),
+        workouts: [...weekWorkouts],
+        savedAt: new Date().toISOString(),
+        totalWorkouts: weekWorkouts.length,
+        completedWorkouts: weekWorkouts.filter(w => w.completed).length
+    };
+    
+    const existingIndex = weekHistory.findIndex(w => w.id === weekId);
+    
+    if (existingIndex >= 0) {
+        weekHistory[existingIndex] = weekData;
+    } else {
+        weekHistory.unshift(weekData);
+    }
+    
+    saveToLocalStorage();
+}
+
+// Nueva función: Actualizar semana existente en el historial
+function updateWeekInHistory(weekId) {
+    const existingIndex = weekHistory.findIndex(w => w.id === weekId);
+    if (existingIndex >= 0) {
+        const weekWorkouts = allWeekWorkouts[weekId];
+        weekHistory[existingIndex].workouts = [...weekWorkouts];
+        weekHistory[existingIndex].totalWorkouts = weekWorkouts.length;
+        weekHistory[existingIndex].completedWorkouts = weekWorkouts.filter(w => w.completed).length;
+        weekHistory[existingIndex].updatedAt = new Date().toISOString();
+        saveToLocalStorage();
+    }
+}
+
 function saveToLocalStorage() {
-    localStorage.setItem('gymTrackerCurrentWeek', JSON.stringify(currentWeekWorkouts));
+    localStorage.setItem('gymTrackerAllWeeks', JSON.stringify(allWeekWorkouts));
     localStorage.setItem('gymTrackerHistory', JSON.stringify(weekHistory));
     localStorage.setItem('gymTrackerWeekOffset', currentWeekOffset.toString());
 }
 
 function loadFromLocalStorage() {
-    const storedCurrent = localStorage.getItem('gymTrackerCurrentWeek');
+    const storedAllWeeks = localStorage.getItem('gymTrackerAllWeeks');
     const storedHistory = localStorage.getItem('gymTrackerHistory');
     const storedOffset = localStorage.getItem('gymTrackerWeekOffset');
 
-    if (storedCurrent) {
-        currentWeekWorkouts = JSON.parse(storedCurrent);
+    if (storedAllWeeks) {
+        allWeekWorkouts = JSON.parse(storedAllWeeks);
     }
 
     if (storedHistory) {
@@ -124,13 +214,13 @@ function loadFromLocalStorage() {
         currentWeekOffset = parseInt(storedOffset);
     }
 
-    // Set default date
     const today = new Date();
     document.getElementById('workoutDate').value = today.toISOString().split('T')[0];
     updateDayFromDate();
+    
+    autoSaveWeekIfNeeded();
 }
 
-// Tab functions
 function switchTab(tabName) {
     const tabs = document.querySelectorAll('.nav-tab');
     const contents = document.querySelectorAll('.tab-content');
@@ -148,7 +238,6 @@ function switchTab(tabName) {
     }
 }
 
-// Week navigation
 function previousWeek() {
     currentWeekOffset--;
     updateWeekDisplay();
@@ -177,10 +266,11 @@ function updateWeekDisplay() {
     document.getElementById('currentWeekDates').textContent = 
         `${formatDate(monday)} - ${formatDate(sunday)}`;
     
+    autoSaveWeekIfNeeded();
+    updateWeekIndicators();
     saveToLocalStorage();
 }
 
-// Form functions
 function toggleAddForm() {
     const content = document.getElementById('addFormContent');
     const icon = document.getElementById('addFormToggle');
@@ -190,26 +280,11 @@ function toggleAddForm() {
         'rotate(0deg)' : 'rotate(180deg)';
 }
 
-// Reemplaza la función updateDayFromDate existente con esta:
 function updateDayFromDate() {
     const dateInput = document.getElementById('workoutDate');
     const daySelect = document.getElementById('daySelect');
     
     if (dateInput.value) {
-        const date = new Date(dateInput.value);
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        daySelect.value = days[date.getDay()];
-        formData.date = dateInput.value;
-        formData.day = daySelect.value;
-    }
-}
-
-function updateDayFromDate() {
-    const dateInput = document.getElementById('workoutDate');
-    const daySelect = document.getElementById('daySelect');
-    
-    if (dateInput.value) {
-        // Crear la fecha correctamente para evitar problemas de zona horaria
         const dateParts = dateInput.value.split('-');
         const date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
         
@@ -229,23 +304,18 @@ function updateDateFromDay() {
         const selectedDayIndex = days.indexOf(daySelect.value);
         
         if (selectedDayIndex !== -1) {
-            // Obtener la fecha de la semana actual considerando el offset
             const { monday } = getWeekDates(currentWeekOffset);
             
-            // Calcular la fecha del día seleccionado
             const targetDate = new Date(monday);
-            targetDate.setDate(monday.getDate() + selectedDayIndex - 1); // -1 porque monday es día 1, pero necesitamos que domingo sea 0
+            targetDate.setDate(monday.getDate() + selectedDayIndex - 1);
             
-            // Si el día seleccionado es domingo (0), debe ser el domingo de esa semana
             if (selectedDayIndex === 0) {
-                targetDate.setDate(monday.getDate() + 6); // Domingo es 6 días después del lunes
+                targetDate.setDate(monday.getDate() + 6);
             }
             
-            // Formatear la fecha para el input
             const formattedDate = targetDate.toISOString().split('T')[0];
             dateInput.value = formattedDate;
             
-            // Actualizar formData
             formData.date = formattedDate;
             formData.day = daySelect.value;
         }
@@ -341,7 +411,6 @@ function validateForm() {
             showError('day', `El día seleccionado no coincide con la fecha. Debería ser ${calculatedDay}`);
             isValid = false;
         } else {
-            // Si no hay día seleccionado, se setea automáticamente
             formData.day = calculatedDay;
         }
     }
@@ -358,7 +427,6 @@ function validateForm() {
 
     return isValid;
 }
-
 
 function clearErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
@@ -378,9 +446,7 @@ function showError(field, message) {
     }
 }
 
-// CRUD operations
 function saveWorkout() {
-    // Update form data from inputs
     formData.date = document.getElementById('workoutDate').value;
     formData.day = document.getElementById('daySelect').value;
     formData.muscleGroup = document.getElementById('muscleGroupSelect').value;
@@ -395,6 +461,8 @@ function saveWorkout() {
         createdAt: new Date().toISOString()
     };
 
+    let currentWeekWorkouts = getCurrentWeekWorkouts();
+
     if (isEditing) {
         const index = currentWeekWorkouts.findIndex(w => w.id === isEditing);
         if (index !== -1) {
@@ -405,6 +473,13 @@ function saveWorkout() {
         currentWeekWorkouts.push(newWorkout);
     }
 
+    setCurrentWeekWorkouts(currentWeekWorkouts);
+    
+    // Actualizar historial si la semana ya está guardada
+    const { monday } = getWeekDates(currentWeekOffset);
+    const weekId = getWeekId(monday);
+    updateWeekInHistory(weekId);
+    
     saveToLocalStorage();
     cancelAdd();
     renderWorkouts();
@@ -412,6 +487,7 @@ function saveWorkout() {
 }
 
 function editWorkout(id) {
+    const currentWeekWorkouts = getCurrentWeekWorkouts();
     const workout = currentWeekWorkouts.find(w => w.id === id);
     if (workout) {
         isEditing = id;
@@ -431,7 +507,15 @@ function editWorkout(id) {
 
 function deleteWorkout(id) {
     if (confirm('¿Estás seguro de que quieres eliminar este entrenamiento?')) {
+        let currentWeekWorkouts = getCurrentWeekWorkouts();
         currentWeekWorkouts = currentWeekWorkouts.filter(w => w.id !== id);
+        setCurrentWeekWorkouts(currentWeekWorkouts);
+        
+        // Actualizar historial si la semana ya está guardada
+        const { monday } = getWeekDates(currentWeekOffset);
+        const weekId = getWeekId(monday);
+        updateWeekInHistory(weekId);
+        
         saveToLocalStorage();
         renderWorkouts();
         updateStats();
@@ -439,13 +523,29 @@ function deleteWorkout(id) {
 }
 
 function toggleCompleted(id) {
+    let currentWeekWorkouts = getCurrentWeekWorkouts();
     const workout = currentWeekWorkouts.find(w => w.id === id);
     if (workout) {
         workout.completed = !workout.completed;
         workout.completedAt = workout.completed ? new Date().toISOString() : null;
+        setCurrentWeekWorkouts(currentWeekWorkouts);
+        
+        // Actualizar historial si la semana ya está guardada
+        const { monday } = getWeekDates(currentWeekOffset);
+        const weekId = getWeekId(monday);
+        updateWeekInHistory(weekId);
+        
         saveToLocalStorage();
         renderWorkouts();
         updateStats();
+        
+        // Auto-guardar si se completa un entrenamiento en domingo
+        if (workout.completed) {
+            const workoutDate = new Date(workout.date);
+            if (isEndOfWeek(workoutDate)) {
+                saveWeekToHistory(weekId);
+            }
+        }
     }
 }
 
@@ -453,7 +553,6 @@ function cancelAdd() {
     document.getElementById('addFormContent').classList.add('hidden');
     document.getElementById('addFormToggle').style.transform = 'rotate(0deg)';
     
-    // Reset form
     isEditing = null;
     formData = {
         date: document.getElementById('workoutDate').value,
@@ -468,71 +567,21 @@ function cancelAdd() {
     clearErrors();
 }
 
-// Week management
-function createTemplateWeek() {
-    if (currentWeekWorkouts.length > 0) {
-        if (!confirm('Ya tienes entrenamientos en esta semana. ¿Quieres reemplazarlos?')) {
-            return;
-        }
-    }
-
-    const { monday } = getWeekDates(currentWeekOffset);
-    const templateWorkouts = [
-        {
-            id: Date.now() + 1,
-            date: new Date(monday.getTime()).toISOString().split('T')[0],
-            day: 'Lunes',
-            muscleGroup: 'Pecho y Bíceps',
-            exercises: [
-                { name: 'Press de banca', sets: '4', reps: '8', weight: '80kg' },
-                { name: 'Press inclinado', sets: '3', reps: '10', weight: '70kg' },
-                { name: 'Curl de bíceps con barra', sets: '3', reps: '12', weight: '25kg' }
-            ],
-            completed: false,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: Date.now() + 2,
-            date: new Date(monday.getTime() + 86400000).toISOString().split('T')[0],
-            day: 'Martes',
-            muscleGroup: 'Espalda y Tríceps',
-            exercises: [
-                { name: 'Dominadas', sets: '4', reps: '6', weight: 'Peso corporal' },
-                { name: 'Remo con barra', sets: '4', reps: '8', weight: '75kg' },
-                { name: 'Extensiones de tríceps', sets: '3', reps: '12', weight: '20kg' }
-            ],
-            completed: false,
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: Date.now() + 3,
-            date: new Date(monday.getTime() + 3 * 86400000).toISOString().split('T')[0],
-            day: 'Jueves',
-            muscleGroup: 'Piernas y Hombro',
-            exercises: [
-                { name: 'Sentadillas', sets: '4', reps: '10', weight: '100kg' },
-                { name: 'Press militar', sets: '4', reps: '8', weight: '50kg' },
-                { name: 'Elevaciones laterales', sets: '3', reps: '12', weight: '10kg' }
-            ],
-            completed: false,
-            createdAt: new Date().toISOString()
-        }
-    ];
-
-    currentWeekWorkouts = templateWorkouts;
-    saveToLocalStorage();
-    renderWorkouts();
-    updateStats();
-}
-
 function clearCurrentWeek() {
+    const currentWeekWorkouts = getCurrentWeekWorkouts();
     if (currentWeekWorkouts.length === 0) {
         alert('No hay entrenamientos para eliminar.');
         return;
     }
 
     if (confirm('¿Estás seguro de que quieres eliminar todos los entrenamientos de esta semana?')) {
-        currentWeekWorkouts = [];
+        setCurrentWeekWorkouts([]);
+        
+        // Actualizar historial si la semana ya está guardada
+        const { monday } = getWeekDates(currentWeekOffset);
+        const weekId = getWeekId(monday);
+        updateWeekInHistory(weekId);
+        
         saveToLocalStorage();
         renderWorkouts();
         updateStats();
@@ -540,45 +589,23 @@ function clearCurrentWeek() {
 }
 
 function saveCurrentWeek() {
+    const currentWeekWorkouts = getCurrentWeekWorkouts();
     if (currentWeekWorkouts.length === 0) {
         alert('No hay entrenamientos para guardar.');
         return;
     }
 
-    const { monday, sunday } = getWeekDates(currentWeekOffset);
+    const { monday } = getWeekDates(currentWeekOffset);
     const weekId = getWeekId(monday);
-    
-    // Check if week already exists in history
-    const existingIndex = weekHistory.findIndex(w => w.id === weekId);
-    
-    const weekData = {
-        id: weekId,
-        startDate: monday.toISOString(),
-        endDate: sunday.toISOString(),
-        workouts: [...currentWeekWorkouts],
-        savedAt: new Date().toISOString(),
-        totalWorkouts: currentWeekWorkouts.length,
-        completedWorkouts: currentWeekWorkouts.filter(w => w.completed).length
-    };
-
-    if (existingIndex >= 0) {
-        if (confirm('Esta semana ya está guardada en el historial. ¿Quieres actualizarla?')) {
-            weekHistory[existingIndex] = weekData;
-        } else {
-            return;
-        }
-    } else {
-        weekHistory.unshift(weekData);
-    }
-
-    saveToLocalStorage();
+    saveWeekToHistory(weekId);
     alert('Semana guardada en el historial correctamente.');
 }
 
-// Render functions
+// Función modificada: Ahora permite edición en todas las semanas
 function renderWorkouts() {
     const container = document.getElementById('workoutsList');
     const emptyState = document.getElementById('emptyState');
+    const currentWeekWorkouts = getCurrentWeekWorkouts();
 
     if (currentWeekWorkouts.length === 0) {
         container.innerHTML = '';
@@ -589,7 +616,6 @@ function renderWorkouts() {
     emptyState.classList.add('hidden');
     container.innerHTML = '';
 
-    // Sort workouts by date
     const sortedWorkouts = [...currentWeekWorkouts].sort((a, b) => 
         new Date(a.date) - new Date(b.date)
     );
@@ -598,23 +624,35 @@ function renderWorkouts() {
         const workoutCard = document.createElement('div');
         workoutCard.className = 'workout-card';
         
+        // Siempre mostrar checkbox - ahora es editable en todas las semanas
+        const checkboxOrStatus = `<input type="checkbox" class="workout-checkbox" ${workout.completed ? 'checked' : ''}>`;
+        
+        // Siempre mostrar acciones de editar/eliminar
+        const actions = `<div class="workout-actions">
+            <button class="btn btn-secondary btn-small" onclick="editWorkout(${workout.id})">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-small" onclick="deleteWorkout(${workout.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>`;
+        
+        // Agregar indicador visual si no es la semana actual
+        const weekIndicator = !isCurrentWeek() ? 
+            `<div class="week-indicator">
+            </div>` : '';
+        
         workoutCard.innerHTML = `
+            ${weekIndicator}
             <div class="workout-header">
                 <div class="workout-info">
-                    <input type="checkbox" class="workout-checkbox" ${workout.completed ? 'checked' : ''}>
+                    ${checkboxOrStatus}
                     <div class="workout-details ${workout.completed ? 'completed' : ''}">
                         <h3>${workout.day} - ${formatFullDate(new Date(workout.date))}</h3>
                         <p>${workout.muscleGroup} • ${workout.exercises.length} ejercicios</p>
                     </div>
                 </div>
-                <div class="workout-actions">
-                    <button class="btn btn-secondary btn-small" onclick="editWorkout(${workout.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-danger btn-small" onclick="deleteWorkout(${workout.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${actions}
             </div>
             <div class="exercises-grid">
                 ${workout.exercises.map(exercise => `
@@ -642,8 +680,11 @@ function renderWorkouts() {
             </div>
         `;
 
+        // Siempre agregar evento de checkbox
         const checkbox = workoutCard.querySelector('.workout-checkbox');
-        checkbox.addEventListener('change', () => toggleCompleted(workout.id));
+        if (checkbox) {
+            checkbox.addEventListener('change', () => toggleCompleted(workout.id));
+        }
 
         container.appendChild(workoutCard);
     });
@@ -666,6 +707,11 @@ function renderHistory() {
         const progressPercentage = week.totalWorkouts > 0 ? 
             Math.round((week.completedWorkouts / week.totalWorkouts) * 100) : 0;
         
+        // Indicador de última actualización
+        const updateInfo = week.updatedAt ? 
+            `Actualizado el ${formatFullDate(new Date(week.updatedAt))}` :
+            `Guardado el ${formatFullDate(new Date(week.savedAt))}`;
+        
         const weekDiv = document.createElement('div');
         weekDiv.className = 'week-history-item';
         
@@ -673,7 +719,7 @@ function renderHistory() {
             <div class="history-header" onclick="toggleHistoryWeek('${week.id}')">
                 <div class="history-info">
                     <h3>${formatDate(new Date(week.startDate))} - ${formatDate(new Date(week.endDate))}</h3>
-                    <p>Guardado el ${formatFullDate(new Date(week.savedAt))}</p>
+                    <p>${updateInfo}</p>
                 </div>
                 <div class="history-stats">
                     <div style="text-align: center; margin-right: 1rem;">
@@ -696,22 +742,51 @@ function renderHistory() {
             </div>
             <div class="history-content" id="history-${week.id}">
                 <div style="padding: 2rem;">
-                    ${week.workouts.map(workout => `
-                        <div class="exercise-item" style="margin-bottom: 1rem;">
-                            <h4 style="margin-bottom: 0.5rem; color: ${workout.completed ? '#10b981' : '#e2e8f0'};">
-                                ${workout.day} - ${workout.muscleGroup}
-                                ${workout.completed ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: 0.5rem;"></i>' : ''}
-                            </h4>
-                            <div class="exercise-details">
-                                ${workout.exercises.map(exercise => `
-                                    <div class="exercise-detail">
-                                        <span>${exercise.name}</span>
-                                        <p>${exercise.sets}x${exercise.reps} - ${exercise.weight}</p>
-                                    </div>
+                    <div class="week-summary-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th>Grupo Muscular</th>
+                                    <th>Ejercicios</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${week.workouts.map(workout => `
+                                    <tr class="${workout.completed ? 'completed' : 'pending'}">
+                                        <td>${workout.day}</td>
+                                        <td>${workout.muscleGroup}</td>
+                                        <td>${workout.exercises.length}</td>
+                                        <td>
+                                            <span class="status-badge ${workout.completed ? 'completed' : 'pending'}">
+                                                <i class="fas ${workout.completed ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                                ${workout.completed ? 'Completado' : 'Pendiente'}
+                                            </span>
+                                        </td>
+                                    </tr>
                                 `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="exercises-summary">
+                        <h4>Detalle de Ejercicios:</h4>
+                        ${week.workouts.map(workout => `
+                            <div class="workout-summary ${workout.completed ? 'completed' : 'pending'}">
+                                <h5>${workout.day} - ${workout.muscleGroup}</h5>
+                                <div class="exercise-details">
+                                    ${workout.exercises.map(exercise => `
+                                        <div class="exercise-detail">
+                                            <span>${exercise.name}</span>
+                                            <p>${exercise.sets}x${exercise.reps} - ${exercise.weight}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
+                    
                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(71, 85, 105, 0.3);">
                         <button class="btn btn-danger btn-small" onclick="deleteWeekFromHistory('${week.id}')">
                             <i class="fas fa-trash"></i> Eliminar del Historial
@@ -731,19 +806,32 @@ function toggleHistoryWeek(weekId) {
 }
 
 function deleteWeekFromHistory(weekId) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta semana del historial?')) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta semana del historial? Esto eliminará todos los entrenamientos de esa semana permanentemente.')) {
+        // Eliminar del historial
         weekHistory = weekHistory.filter(w => w.id !== weekId);
+        
+        // Eliminar también de allWeekWorkouts
+        delete allWeekWorkouts[weekId];
+        
         saveToLocalStorage();
         renderHistory();
+        
+        // Si estamos viendo esa semana actualmente, actualizar la vista
+        const { monday } = getWeekDates(currentWeekOffset);
+        const currentWeekId = getWeekId(monday);
+        if (currentWeekId === weekId) {
+            renderWorkouts();
+            updateStats();
+        }
     }
 }
 
 function updateStats() {
+    const currentWeekWorkouts = getCurrentWeekWorkouts();
     const totalDays = currentWeekWorkouts.length;
     const completedDays = currentWeekWorkouts.filter(w => w.completed).length;
     const progress = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
     
-    // Calculate current streak
     const sortedHistory = [...weekHistory].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
     let streak = 0;
     
@@ -761,6 +849,48 @@ function updateStats() {
     document.getElementById('currentStreak').textContent = streak;
 }
 
+// Función actualizada: Ahora indica que todas las semanas son editables
+function updateWeekIndicators() {
+    const weekIndicator = document.getElementById('weekTypeIndicator');
+    const statusIndicator = document.getElementById('weekStatusIndicator');
+    const clearBtn = document.getElementById('clearWeekBtn');
+    
+    if (weekIndicator) {
+        if (isCurrentWeek()) {
+            weekIndicator.textContent = '(Editable)';
+            weekIndicator.style.color = '#10b981';
+        } else {
+            weekIndicator.textContent = '(Editable - Cambios se sincronizan)';
+            weekIndicator.style.color = '#f59e0b';
+        }
+    }
+    
+    if (statusIndicator) {
+        const { monday } = getWeekDates(currentWeekOffset);
+        const weekId = getWeekId(monday);
+        const isInHistory = weekHistory.find(w => w.id === weekId);
+        
+        if (isInHistory && !isCurrentWeek()) {
+            statusIndicator.style.display = 'block';
+            const indicator = statusIndicator.querySelector('.auto-saved-indicator');
+            if (indicator) {
+                indicator.innerHTML = `
+                    <i class="fas fa-sync-alt"></i>
+                    Cambios se sincronizan automáticamente
+                `;
+            }
+        } else {
+            statusIndicator.style.display = 'none';
+        }
+    }
+    
+    // Permitir limpiar cualquier semana
+    if (clearBtn) {
+        clearBtn.disabled = false;
+        clearBtn.style.opacity = '1';
+    }
+}
+
 // Event listeners
 document.getElementById('workoutDate').addEventListener('change', updateDayFromDate);
 document.getElementById('daySelect').addEventListener('change', updateDateFromDay);
@@ -769,6 +899,7 @@ document.getElementById('daySelect').addEventListener('change', updateDateFromDa
 function init() {
     loadFromLocalStorage();
     updateWeekDisplay();
+    updateWeekIndicators();
     renderWorkouts();
     updateStats();
     renderExercisesList();

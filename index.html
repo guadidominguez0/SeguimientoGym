@@ -84,6 +84,7 @@
                         <h2 class="week-title">
                             <i class="fas fa-calendar-week"></i>
                             <span id="currentWeekTitle">Semana Actual</span>
+                            <span id="weekTypeIndicator" style="font-size: 0.8rem; color: #94a3b8; font-weight: normal;"></span>
                         </h2>
                         <p class="week-subtitle" id="currentWeekDates"></p>
                     </div>
@@ -170,16 +171,19 @@
             </div>
 
             <!-- Quick Actions -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                <button class="btn btn-secondary" onclick="createTemplateWeek()">
-                    <i class="fas fa-magic"></i> Crear Semana Template
-                </button>
-                <button class="btn btn-danger" onclick="clearCurrentWeek()">
-                    <i class="fas fa-trash-alt"></i> Limpiar Semana
-                </button>
-                <button class="btn btn-primary" onclick="saveCurrentWeek()">
-                    <i class="fas fa-archive"></i> Guardar en Historial
-                </button>
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-danger" onclick="clearCurrentWeek()" id="clearWeekBtn">
+                        <i class="fas fa-trash-alt"></i> Limpiar Semana
+                    </button>
+                </div>
+                
+                <div id="weekStatusIndicator" style="display: none;">
+                    <span class="auto-saved-indicator">
+                        <i class="fas fa-check-circle"></i>
+                        Guardado automáticamente
+                    </span>
+                </div>
             </div>
 
             <!-- Workouts List -->

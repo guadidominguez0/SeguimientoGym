@@ -643,3 +643,278 @@ body {
     --icon-bg: rgba(245, 158, 11, 0.2);
     --icon-color: #fbbf24;
 }
+
+/* Estilos adicionales para las nuevas funcionalidades */
+
+/* Estado de entrenamientos (para semanas anteriores) */
+.workout-status {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+.workout-status.completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.workout-status.pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+/* Tabla de resumen semanal en el historial */
+.week-summary-table {
+    margin-bottom: 2rem;
+    overflow-x: auto;
+}
+
+.week-summary-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.week-summary-table th,
+.week-summary-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+.week-summary-table th {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.week-summary-table tr.completed {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.week-summary-table tr.pending {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.week-summary-table tr:hover {
+    background: rgba(71, 85, 105, 0.1);
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+/* Resumen de ejercicios en el historial */
+.exercises-summary {
+    margin-top: 2rem;
+}
+
+.exercises-summary h4 {
+    color: #60a5fa;
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.exercises-summary h4::before {
+    content: '';
+    width: 3px;
+    height: 1.5rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+}
+
+.workout-summary {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(71, 85, 105, 0.2);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.workout-summary.completed {
+    border-left: 4px solid #10b981;
+}
+
+.workout-summary.pending {
+    border-left: 4px solid #f59e0b;
+}
+
+.workout-summary h5 {
+    color: #e2e8f0;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.workout-summary.completed h5::after {
+    content: '\f058';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    color: #10b981;
+    font-size: 0.875rem;
+}
+
+.workout-summary.pending h5::after {
+    content: '\f017';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 400;
+    color: #f59e0b;
+    font-size: 0.875rem;
+}
+
+/* Indicadores visuales para semanas no actuales */
+.workout-card.readonly {
+    opacity: 0.9;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.4));
+}
+
+.workout-card.readonly .workout-header {
+    background: rgba(71, 85, 105, 0.1);
+}
+
+/* Mejoras para el historial */
+.history-header {
+    position: relative;
+}
+
+.history-header::after {
+    content: '\f107';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    transition: transform 0.3s ease;
+}
+
+.history-content.expanded + .history-header::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* Animación para el contenido expandible */
+.history-content {
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.history-content.expanded {
+    opacity: 1;
+}
+
+/* Botones de acción condicionales */
+.week-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Indicador de semana guardada automáticamente */
+.auto-saved-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
+    margin-left: 0.5rem;
+}
+
+/* Responsive para las nuevas tablas */
+@media (max-width: 768px) {
+    .week-summary-table {
+        font-size: 0.875rem;
+    }
+    
+    .week-summary-table th,
+    .week-summary-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .workout-summary {
+        padding: 1rem;
+    }
+    
+    .exercises-summary h4 {
+        font-size: 1rem;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Indicador de semana anterior - Agregar al final de styles.css */
+.week-indicator i {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Estilo para cuando es guardado automáticamente (verde) */
+.auto-saved-indicator.saved {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Animación sutil para los indicadores de sincronización */
+@keyframes pulse-sync {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.auto-saved-indicator i.fa-sync-alt {
+    animation: pulse-sync 2s infinite ease-in-out;
+}
+
+/* Indicador en el título de la semana */
+#weekTypeIndicator {
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background: rgba(16, 185, 129, 0.1);
+    margin-left: 0.75rem;
+}
+
+#weekTypeIndicator:not([style*="color: #10b981"]) {
+    background: rgba(245, 158, 11, 0.1);
+}
