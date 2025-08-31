@@ -1,23 +1,53 @@
 // Data structures
 const muscleGroups = {
     'Pecho y Bíceps': [
-        'Press de banca', 'Press inclinado', 'Press declinado', 'Aperturas con mancuernas',
-        'Fondos en paralelas', 'Curl de bíceps con barra', 'Curl de bíceps con mancuernas',
-        'Curl martillo', 'Curl concentrado', 'Curl predicador'
+        'Banco plano con mancuernas',
+        'Curl biceps con barra',
+        'Flexiones de brazos',
+        'Biceps Hammer',
+        'Pec Deck',
+        'Banco inclinado con barra',
+        'Press de banca', 
+        'Aperturas con mancuernas',
+        'Curl de bíceps con barra', 
+        'Curl de bíceps con mancuernas'
     ],
     'Espalda y Tríceps': [
-        'Dominadas', 'Remo con barra', 'Remo con mancuerna', 'Jalones al pecho',
-        'Peso muerto', 'Extensiones de tríceps', 'Press francés', 'Fondos en banco',
-        'Patadas de tríceps', 'Press cerrado'
+        'Dorsalera',
+        'Remo con barra de pie',
+        'Triceps polea con barra recta',
+        'Fondos en paralelas',
+        'Vuelos laterales',
+        'Triceos trasnuca',
+        'Remo sentado',
+        'Dominadas', 
+        'Remo con barra', 
+        'Remo con mancuerna',
+        'Peso muerto'
     ],
     'Piernas y Hombro': [
-        'Sentadillas', 'Prensa de piernas', 'Peso muerto rumano', 'Extensiones de cuádriceps',
-        'Curl femoral', 'Elevaciones de gemelos', 'Press militar', 'Elevaciones laterales',
-        'Elevaciones frontales', 'Remo al mentón', 'Zancadas', 'Sentadilla búlgara'
+        'Peso muerto',
+        'Gemelos parado',
+        'Sentadilla convencional',
+        'Bulgaea con mancuernas',
+        'Gemelos sentado',
+        'Prensa a 45°',
+        'Curl femoral', 
+        'Press militar', 
+        'Remo al mentón', 
+        'Zancadas'
     ],
     'Cardio': [
-        'Correr en cinta', 'Bicicleta estática', 'Elíptica', 'Remo', 'Burpees',
-        'Jumping jacks', 'Mountain climbers', 'HIIT', 'Caminar inclinado'
+        'Correr en cinta',
+        'Saltar la soga', 
+        'Bicicleta estática', 
+        'Elíptica', 
+        'Remo', 
+        'Burpees',
+        'Jumping jacks', 
+        'Mountain climbers', 
+        'HIIT', 
+        'Caminar inclinado'
     ]
 };
 
