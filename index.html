@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Gimnasio Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-dumbbell"></i> GymTracker Pro</h1>
+                <p>Tu compañero inteligente para el entrenamiento semanal</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('current')">
+                <i class="fas fa-calendar-week"></i> Semana Actual
+            </button>
+            <button class="nav-tab" onclick="switchTab('history')">
+                <i class="fas fa-history"></i> Historial
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Días Programados</p>
+                        <p id="totalDays">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Completados</p>
+                        <p id="completedDays">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Progreso</p>
+                        <p id="progressPercentage">0%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p>Racha Actual</p>
+                        <p id="currentStreak">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Week Tab -->
+        <div id="currentTab" class="tab-content active">
+            <!-- Week Selector -->
+            <div class="current-week">
+                <div class="week-header">
+                    <div class="week-info">
+                        <h2 class="week-title">
+                            <i class="fas fa-calendar-week"></i>
+                            <span id="currentWeekTitle">Semana Actual</span>
+                        </h2>
+                        <p class="week-subtitle" id="currentWeekDates"></p>
+                    </div>
+                    <div class="week-actions">
+                        <button class="btn btn-secondary" onclick="previousWeek()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="nextWeek()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-primary" onclick="goToCurrentWeek()">
+                            <i class="fas fa-calendar-day"></i> Hoy
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Workout Section -->
+            <div class="form-section">
+                <div class="form-header">
+                    <h3 class="form-title">
+                        <i class="fas fa-plus-circle"></i>
+                        Agregar Entrenamiento
+                    </h3>
+                    <button class="btn btn-secondary btn-small" onclick="toggleAddForm()">
+                        <i class="fas fa-chevron-down" id="addFormToggle"></i>
+                    </button>
+                </div>
+                
+                <div id="addFormContent" class="form-content hidden">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" id="workoutDate" class="form-input">
+                            <div id="dateError" class="error-message hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Día de la Semana</label>
+                            <select id="daySelect" class="form-select">
+                                <option value="">Seleccionar día</option>
+                                <option value="Lunes">Lunes</option>
+                                <option value="Martes">Martes</option>
+                                <option value="Miércoles">Miércoles</option>
+                                <option value="Jueves">Jueves</option>
+                                <option value="Viernes">Viernes</option>
+                                <option value="Sábado">Sábado</option>
+                                <option value="Domingo">Domingo</option>
+                            </select>
+                            <div id="dayError" class="error-message hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Grupo Muscular</label>
+                            <select id="muscleGroupSelect" class="form-select" onchange="updateExerciseOptions()">
+                                <option value="">Seleccionar grupo muscular</option>
+                                <option value="Pecho y Bíceps">Pecho y Bíceps</option>
+                                <option value="Espalda y Tríceps">Espalda y Tríceps</option>
+                                <option value="Piernas y Hombro">Piernas y Hombro</option>
+                                <option value="Cardio">Cardio</option>
+                            </select>
+                            <div id="muscleGroupError" class="error-message hidden"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <label class="form-label">Ejercicios</label>
+                            <button class="btn btn-primary btn-small" onclick="addExercise()">
+                                <i class="fas fa-plus"></i> Agregar Ejercicio
+                            </button>
+                        </div>
+                        <div id="exercisesList"></div>
+                        <div id="exercisesError" class="error-message hidden"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button class="btn btn-secondary" onclick="cancelAdd()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button class="btn btn-primary" onclick="saveWorkout()">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="createTemplateWeek()">
+                    <i class="fas fa-magic"></i> Crear Semana Template
+                </button>
+                <button class="btn btn-danger" onclick="clearCurrentWeek()">
+                    <i class="fas fa-trash-alt"></i> Limpiar Semana
+                </button>
+                <button class="btn btn-primary" onclick="saveCurrentWeek()">
+                    <i class="fas fa-archive"></i> Guardar en Historial
+                </button>
+            </div>
+
+            <!-- Workouts List -->
+            <div id="workoutsList"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state hidden">
+                <i class="fas fa-calendar-plus"></i>
+                <h3>No hay entrenamientos esta semana</h3>
+                <p>Agrega tu primer entrenamiento para comenzar</p>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="historyTab" class="tab-content">
+            <div id="weekHistory"></div>
+            
+            <!-- History Empty State -->
+            <div id="historyEmptyState" class="empty-state">
+                <i class="fas fa-history"></i>
+                <h3>No hay semanas guardadas</h3>
+                <p>Las semanas que guardes aparecerán aquí</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
