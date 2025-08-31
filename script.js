@@ -190,6 +190,7 @@ function toggleAddForm() {
         'rotate(0deg)' : 'rotate(180deg)';
 }
 
+// Reemplaza la función updateDayFromDate existente con esta:
 function updateDayFromDate() {
     const dateInput = document.getElementById('workoutDate');
     const daySelect = document.getElementById('daySelect');
@@ -201,6 +202,61 @@ function updateDayFromDate() {
         formData.date = dateInput.value;
         formData.day = daySelect.value;
     }
+}
+
+function updateDayFromDate() {
+    const dateInput = document.getElementById('workoutDate');
+    const daySelect = document.getElementById('daySelect');
+    
+    if (dateInput.value) {
+        // Crear la fecha correctamente para evitar problemas de zona horaria
+        const dateParts = dateInput.value.split('-');
+        const date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+        
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        daySelect.value = days[date.getDay()];
+        formData.date = dateInput.value;
+        formData.day = daySelect.value;
+    }
+}
+
+function updateDateFromDay() {
+    const dateInput = document.getElementById('workoutDate');
+    const daySelect = document.getElementById('daySelect');
+    
+    if (daySelect.value) {
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const selectedDayIndex = days.indexOf(daySelect.value);
+        
+        if (selectedDayIndex !== -1) {
+            // Obtener la fecha de la semana actual considerando el offset
+            const { monday } = getWeekDates(currentWeekOffset);
+            
+            // Calcular la fecha del día seleccionado
+            const targetDate = new Date(monday);
+            targetDate.setDate(monday.getDate() + selectedDayIndex - 1); // -1 porque monday es día 1, pero necesitamos que domingo sea 0
+            
+            // Si el día seleccionado es domingo (0), debe ser el domingo de esa semana
+            if (selectedDayIndex === 0) {
+                targetDate.setDate(monday.getDate() + 6); // Domingo es 6 días después del lunes
+            }
+            
+            // Formatear la fecha para el input
+            const formattedDate = targetDate.toISOString().split('T')[0];
+            dateInput.value = formattedDate;
+            
+            // Actualizar formData
+            formData.date = formattedDate;
+            formData.day = daySelect.value;
+        }
+    }
+}
+
+function getDayName(dateString) {
+    const dateParts = dateString.split('-');
+    const date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return days[date.getDay()];
 }
 
 function updateExerciseOptions() {
@@ -271,7 +327,6 @@ function renderExercisesList() {
     });
 }
 
-// Validation
 function validateForm() {
     clearErrors();
     let isValid = true;
@@ -279,11 +334,16 @@ function validateForm() {
     if (!formData.date) {
         showError('date', 'Debe seleccionar una fecha');
         isValid = false;
-    }
+    } else {
+        const calculatedDay = getDayName(formData.date);
 
-    if (!formData.day) {
-        showError('day', 'Debe seleccionar un día');
-        isValid = false;
+        if (formData.day && formData.day !== calculatedDay) {
+            showError('day', `El día seleccionado no coincide con la fecha. Debería ser ${calculatedDay}`);
+            isValid = false;
+        } else {
+            // Si no hay día seleccionado, se setea automáticamente
+            formData.day = calculatedDay;
+        }
     }
 
     if (!formData.muscleGroup) {
@@ -298,6 +358,7 @@ function validateForm() {
 
     return isValid;
 }
+
 
 function clearErrors() {
     document.querySelectorAll('.error-message').forEach(el => {
@@ -702,6 +763,7 @@ function updateStats() {
 
 // Event listeners
 document.getElementById('workoutDate').addEventListener('change', updateDayFromDate);
+document.getElementById('daySelect').addEventListener('change', updateDateFromDay);
 
 // Initialize app
 function init() {
